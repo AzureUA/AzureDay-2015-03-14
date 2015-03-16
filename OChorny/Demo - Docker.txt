@@ -1,0 +1,88 @@
+# Installing the azure-cli
+sudo apt-get update
+sudo apt-get install nodejs-legacy -y
+sudo apt-get install npm -y
+sudo npm install -g azure-cli -y 
+ 
+# Installing the docker
+sudo apt-get install docker.io -y
+ 
+# configuring access to azure subscription
+sudo azure account download
+sudo azure account import <accountname.publishsettings>
+ 
+ 
+#getting a list of VMs
+sudo azure vm list
+ 
+# getting the ubuntu image name
+sudo azure vm image list | grep Ubuntu-14_04
+ 
+#setting the name of image, username and password 
+vmname1="azureday-ua-01"
+vmname2="azureday-ua-02"
+vmname3="azureday-ua-03"
+imagename="b39f27a8b8c64d52b05eac6a62ebad85__Ubuntu-14_04_2_LTS-amd64-server-20150309-en-us-30GB"
+password="P@ssw0rd"
+username="adadmin"
+ 
+#creating vms
+sudo azure vm docker create $vmname1 -l "East US 2" -e 22 $imagename $username $password
+sudo azure vm docker create $vmname2 -l "East US 2" -e 22 $imagename $username $password
+ 
+#adding HTTP endpoint
+sudo azure vm endpoint create $vmname1 80
+sudo azure vm endpoint create $vmname2 80
+ 
+ 
+#getting the list of endpoints
+sudo azure vm endpoint list $vmname1
+sudo azure vm endpoint list $vmname2
+ 
+#getting the list of docker images
+sudo docker search lamp
+sudo docker search apache
+ 
+# pulling the apache-php image
+sudo docker pull tutum/apache-php
+ 
+# looking on a history
+sudo docker history tutum/apache-php
+ 
+#running container 
+sudo docker run -ti tutum/apache-php  bash
+ 
+#editing the index 
+root@<container id>:/app# vi /var/www/html/index.php
+ 
+#getting a list of running containers
+sudo docker ps 
+ 
+#getting a list of containers
+sudo docker ps -a
+ 
+#commiting changes to image
+sudo docker commit <image id> ochorny/azuredayua
+ 
+#getting list of images
+sudo docker images
+ 
+# pushing image to repo
+sudo docker push ochorny/azuredayua
+ 
+# pulling image on target vm in azure
+sudo docker --tls -H tcp://$vmname1.cloudapp.net:4243 run -d -p 80:80 ochorny/azuredayua /usr/sbin/apache2ctl -D FOREGROUND
+sudo docker --tls -H tcp://$vmname2.cloudapp.net:4243 run -d -p 80:80 ochorny/azuredayua /usr/sbin/apache2ctl -D FOREGROUND
+ 
+# checking a list of running containers 
+sudo docker --tls -H tcp://$vmname1.cloudapp.net:4243 ps -a
+sudo docker --tls -H tcp://$vmname2.cloudapp.net:4243 ps -a
+ 
+# stop container just for example
+sudo docker --tls -H tcp://$vmname1.cloudapp.net:4243 stop <containerId>
+sudo docker --tls -H tcp://$vmname1.cloudapp.net:4243 start <containerId>
+ 
+#running one more instance
+sudo azure vm docker create $vmname3 -l "East US 2" -e 22 $imagename $username $password
+sudo azure vm endpoint create $vmname3 80
+sudo docker --tls -H tcp://$vmname3.cloudapp.net:4243 run -d -p 80:80 ochorny/azuredayua /usr/sbin/apache2ctl -D FOREGROUND
